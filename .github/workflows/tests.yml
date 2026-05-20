@@ -30,24 +30,32 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
 
       - name: Install Node Dependencies
         run: npm ci
+        working-directory: backend
 
       - name: Build Assets
         run: npm run build
+        working-directory: backend
 
       - name: Create SQLite Database
         run: touch database/database.sqlite
+        working-directory: backend
 
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        working-directory: backend
 
       - name: Copy Environment File
         run: cp .env.example .env
+        working-directory: backend
 
       - name: Generate Application Key
         run: php artisan key:generate
+        working-directory: backend
 
       - name: Tests
         run: ./vendor/bin/phpunit
+        working-directory: backend

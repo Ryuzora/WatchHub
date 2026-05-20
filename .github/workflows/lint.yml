@@ -28,15 +28,19 @@ jobs:
         run: |
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
           npm install
+        working-directory: backend
 
       - name: Run Pint
         run: vendor/bin/pint
+        working-directory: backend
 
       - name: Format Frontend
         run: npm run format
+        working-directory: backend
 
       - name: Lint Frontend
         run: npm run lint
+        working-directory: backend
 
       # - name: Commit Changes
       #   uses: stefanzweifel/git-auto-commit-action@v5
