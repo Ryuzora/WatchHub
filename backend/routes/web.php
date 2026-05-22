@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 
 Route::get('/', function () {
@@ -9,7 +10,15 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
+        // request data film dengan id 550.
+        $response = Http::withToken(config('services.tmdb.bearer_token'))
+            ->get('https://api.themoviedb.org/3/movie/550');
+
+        $movie = $response->json();
+        // dd($movie) <- untuk melihat datanya. (buat debugging doang)
+
+        // bawa data ke view
+        return Inertia::render('dashboard', ['movie' => $movie]);
     })->name('dashboard');
 });
 
