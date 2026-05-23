@@ -1,176 +1,224 @@
 import React from "react";
+import TopNav from "./components/TopNav";
 
-const filters = ["All", "Watching", "Completed", "Plan to Watch"];
-
-// Swap this function with a database/API call later.
-function getWatchlist() {
-  return [
-    {
-      id: "movie-1",
-      title: "The Final Frame",
-      director: "C. Saramadewa",
-      year: 2020,
-      status: "Watching",
-      rating: 8.8,
-      duration: "2h 8m",
-      image:
-        "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1200&auto=format&fit=crop",
-    },
-    {
-      id: "movie-2",
-      title: "Concrete Dreams",
-      director: "M. Kusanagi",
-      year: 2018,
-      status: "Completed",
-      rating: 8.4,
-      duration: "1h 54m",
-      image:
-        "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?q=80&w=1200&auto=format&fit=crop",
-    },
-    {
-      id: "movie-3",
-      title: "Celluloid Memory",
-      director: "A. Hartwell",
-      year: 2022,
-      status: "Watching",
-      rating: 9.1,
-      duration: "2h 20m",
-      image:
-        "https://images.unsplash.com/photo-1517602302552-471fe67acf66?q=80&w=1200&auto=format&fit=crop",
-    },
-    {
-      id: "movie-4",
-      title: "The Void Protocol",
-      director: "V. Yamada",
-      year: 2019,
-      status: "Watching",
-      rating: 8.2,
-      duration: "1h 46m",
-      image:
-        "https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?q=80&w=1200&auto=format&fit=crop",
-    },
-  ];
+function getContinueWatching() {
+    return {
+        id: "continue-1",
+        title: "Dune: Part Two",
+        director: "Denis Villeneuve",
+        year: 2024,
+        duration: "2h 46m",
+        image:
+            "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1600&auto=format&fit=crop",
+    };
 }
 
-function IconSearch(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
-      <circle cx="11" cy="11" r="7" />
-      <path d="M20 20l-3.5-3.5" />
-    </svg>
-  );
+function getRecentlyAdded() {
+    return [
+        {
+            id: "recent-1",
+            title: "Oppenheimer",
+            year: 2021,
+            image:
+                "https://images.unsplash.com/photo-1517602302552-471fe67acf66?q=80&w=800&auto=format&fit=crop",
+        },
+        {
+            id: "recent-2",
+            title: "The Zone of Interest",
+            year: 2023,
+            tag: "SEEN",
+            image:
+                "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?q=80&w=800&auto=format&fit=crop",
+        },
+        {
+            id: "recent-3",
+            title: "Anatomy of a Fall",
+            year: 2021,
+            image:
+                "https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?q=80&w=800&auto=format&fit=crop",
+        },
+        {
+            id: "recent-4",
+            title: "Killers of the Flower Moon",
+            year: 2021,
+            image:
+                "https://images.unsplash.com/photo-1512070679280-1b88f38c2dba?q=80&w=800&auto=format&fit=crop",
+        },
+    ];
 }
 
-function IconBell(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
-      <path d="M6.5 9.5a5.5 5.5 0 0111 0c0 4 1.5 5.5 2.5 6H4c1-0.5 2.5-2 2.5-6z" />
-      <path d="M9.5 19a2.5 2.5 0 005 0" />
-    </svg>
-  );
+function getTrendingThisWeek() {
+    return [
+        {
+            id: "trending-1",
+            title: "Poor Things",
+            director: "Yorgos Lanthimos",
+            year: 2023,
+            rank: "#1 TRENDING",
+            isFeature: true,
+            image:
+                "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1600&auto=format&fit=crop",
+            description:
+                "The incredible tale and fantastical evolution of Bella Baxter, a young woman brought back to life by the brilliant and unorthodox scientist Dr. Godwin Baxter.",
+        },
+        {
+            id: "trending-2",
+            title: "Past Lives",
+            year: 2023,
+            rank: "#2 TRENDING",
+            image:
+                "https://images.unsplash.com/photo-1517602302552-471fe67acf66?q=80&w=800&auto=format&fit=crop",
+        },
+        {
+            id: "trending-3",
+            title: "The Holdovers",
+            year: 2023,
+            rank: "#3 TRENDING",
+            image:
+                "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?q=80&w=800&auto=format&fit=crop",
+        },
+    ];
 }
 
-function IconPlus(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
-    </svg>
-  );
+function IconPlay(props) {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+            <path d="M8 5v14l11-7z" />
+        </svg>
+    );
+}
+
+function IconArrow(props) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
+            <path d="M13 17l5-5m0 0l-5-5m5 5H6" />
+        </svg>
+    );
 }
 
 export default function Home() {
-  const movies = getWatchlist();
+    const latestWatch = getContinueWatching();
+    const recentlyAdded = getRecentlyAdded();
+    const trending = getTrendingThisWeek();
 
-  return (
-    <div className="min-h-screen bg-[#0b0c10] text-zinc-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-8">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-8">
-            <div className="text-lg font-semibold tracking-wide text-white">WatchLog</div>
-            <nav className="hidden items-center gap-6 text-sm text-zinc-400 md:flex">
-              <span className="text-zinc-100">Dashboard</span>
-              <span className="hover:text-zinc-200">Search</span>
-              <span className="hover:text-zinc-200">Watchlist</span>
-              <span className="hover:text-zinc-200">Profile</span>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-zinc-300">
-              <IconSearch className="h-4 w-4" />
-            </button>
-            <button className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-zinc-300">
-              <IconBell className="h-4 w-4" />
-            </button>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-zinc-700 via-zinc-600 to-zinc-500" />
-          </div>
-        </header>
+    return (
+        <div className="min-h-screen bg-black text-zinc-100">
+            <div className="mx-auto w-full max-w-7xl flex-col gap-8 px-6 py-6">
+                <TopNav active="Dashboard" />
 
-        <section className="flex flex-col gap-4">
-          <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">Watchlist Dashboard</div>
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-semibold text-white">Your Watchlist</h1>
-              <p className="mt-1 text-sm text-zinc-400">
-                Archive and track your cinematic journey.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 rounded-full bg-zinc-900 p-1 text-xs font-medium text-zinc-300">
-              {filters.map((filter, index) => (
-                <button
-                  key={filter}
-                  className={`rounded-full px-4 py-1.5 transition ${
-                    index === 0
-                      ? "bg-zinc-100 text-zinc-900"
-                      : "hover:text-zinc-100"
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
+                {/* Latest Watching Section */}
+                <section className="mb-12">
+                    <h2 className="mb-6 text-xl font-semibold text-white">Latest Watch</h2>
+                    <div className="grid gap-6 lg:grid-cols-2 border border-gray-300 rounded-2xl min-h-150">
+                        <div className="relative h-64 w-full overflow-hidden rounded-2xl">
+                            <img
+                                src={latestWatch.image}
+                                alt={latestWatch.title}
+                                className="h-full w-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent" />
+                        </div>
+                        <div className="flex flex-col justify-center gap-6">
+                            <h3 className="text-4xl font-semibold text-white">{latestWatch.title}</h3>
+                            <button className="flex w-fit items-center gap-2 rounded-lg bg-white px-6 py-2 font-semibold text-black transition hover:bg-zinc-200">
+                                <IconPlay className="h-4 w-4" />
+                                RESUME
+                            </button>
+                        </div>
+                    </div>
+                </section>
 
-        <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {movies.map((movie) => (
-            <article
-              key={movie.id}
-              className="flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950/40 shadow-[0_20px_40px_-30px_rgba(0,0,0,0.8)]"
-            >
-              <div className="relative h-48 w-full overflow-hidden">
-                <img
-                  src={movie.image}
-                  alt={movie.title}
-                  className="h-full w-full object-cover"
-                />
-                <span className="absolute right-3 top-3 rounded-full bg-zinc-950/80 px-3 py-1 text-xs text-zinc-100">
-                  {movie.status}
-                </span>
-              </div>
-              <div className="flex flex-1 flex-col gap-3 p-4">
-                <div>
-                  <h2 className="text-base font-semibold text-white">{movie.title}</h2>
-                  <p className="text-xs text-zinc-400">{movie.director}</p>
-                </div>
-                <div className="mt-auto flex items-center justify-between text-xs text-zinc-400">
-                  <span>{movie.year}</span>
-                  <span>{movie.duration}</span>
-                  <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-zinc-200">
-                    {movie.rating}
+                {/* Recently Added Section */}
+                <section className="mb-12">
+                    <div className="mb-6 flex items-center justify-between">
+                        <h2 className="text-xl font-semibold text-white">Recently Added to Watchlist</h2>
+                        <a href="#" className="flex items-center gap-2 text-xs text-zinc-400 hover:text-zinc-200">
+                            VIEW ARCHIVE <IconArrow className="h-3 w-3" />
+                        </a>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pb-4 sm:grid-cols-3 lg:grid-cols-5">
+                        {recentlyAdded.map((movie) => (
+                            <div
+                                key={movie.id}
+                                className="group relative shrink-0 overflow-hidden rounded-xl"
+                            >
+                                <img
+                                    src={movie.image}
+                                    alt={movie.title}
+                                    className="aspect-2/3 w-full object-cover transition group-hover:scale-105"
+                                />
+                                {movie.tag && (
+                                    <span className="absolute left-3 top-3 rounded-sm bg-zinc-950/90 px-2 py-1 text-xs font-medium text-zinc-100">
+                    {movie.tag}
                   </span>
-                </div>
-              </div>
-            </article>
-          ))}
-          <article className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/40 p-6 text-zinc-400">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950">
-              <IconPlus className="h-5 w-5" />
+                                )}
+                                <div className="absolute inset-0 flex flex-col justify-end bg-linear-to-t from-black via-transparent to-transparent p-3 opacity-0 transition group-hover:opacity-100">
+                                    <p className="text-sm font-semibold text-white">{movie.title}</p>
+                                    <p className="text-xs text-zinc-400">{movie.year}</p>
+                                </div>
+                            </div>
+                        ))}
+                        <div className="shrink-0">
+                            <button className="flex aspect-2/3 w-full items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 text-center text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-zinc-300">
+                                Discover More
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Trending This Week Section */}
+                <section>
+                    <h2 className="mb-6 text-xl font-semibold text-white">Trending This Week</h2>
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        {/* Main Trending Feature */}
+                        <div className="lg:col-span-2">
+                            <div className="relative h-96 w-full overflow-hidden rounded-2xl lg:h-full">
+                                <img
+                                    src={trending[0].image}
+                                    alt={trending[0].title}
+                                    className="h-full w-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent" />
+                                <div className="absolute bottom-0 left-0 right-0 p-8">
+                  <span className="mb-3 inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white">
+                    {trending[0].rank}
+                  </span>
+                                    <h3 className="mb-3 text-4xl font-semibold text-white">{trending[0].title}</h3>
+                                    <p className="mb-6 max-w-md text-sm text-zinc-300">{trending[0].description}</p>
+                                    <button className="flex items-center gap-2 rounded-lg bg-white px-6 py-2 font-semibold text-black transition hover:bg-zinc-200">
+                                        <IconPlay className="h-4 w-4" />
+                                        Watch Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Trending List */}
+                        <div className="flex flex-col gap-4">
+                            {trending.slice(1).map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="group relative h-40 w-full overflow-hidden rounded-2xl"
+                                >
+                                    <img
+                                        src={item.image}
+                                        alt={item.title}
+                                        className="h-full w-full object-cover transition group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent" />
+                                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <span className="text-xs font-medium text-zinc-400">
+                      {item.rank}
+                    </span>
+                                        <h4 className="text-lg font-semibold text-white">{item.title}</h4>
+                                        <p className="text-xs text-zinc-400">{item.year}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
             </div>
-            <p className="mt-4 text-sm">Add new title</p>
-          </article>
-        </section>
-      </div>
-    </div>
-  );
+        </div>
+    );
 }
