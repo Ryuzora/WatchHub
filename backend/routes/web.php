@@ -31,7 +31,6 @@ Route::get('tmdb-wrapper-test', function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', function () {
         $movie = Tmdb::get("movie", "550", ["images"]);
-        dd($movie);
 
         // bawa data ke view
         return Inertia::render('dashboard', ['movie' => $movie]);
