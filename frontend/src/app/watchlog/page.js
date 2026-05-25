@@ -1,7 +1,28 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import TopNav from "../components/TopNav";
+import WatchlogPopup from "../components/WatchlogPopup";
 
 const filters = ["All", "Watching", "Completed", "Plan to Watch"];
+
+const popupCategories = ["Now Playing", "Popular", "Top Rated", "Upcoming"];
+
+const categoryEndpoints = {
+  "Now Playing": "now-playing",
+  Popular: "popular",
+  "Top Rated": "top-rated",
+  Upcoming: "upcoming",
+};
+
+const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
+
+const popupLists = [
+  { id: "list-1", title: "Trending This Week", count: 12, description: "Popular picks across genres." },
+  { id: "list-2", title: "Award Winners", count: 8, description: "Critically acclaimed favorites." },
+  { id: "list-3", title: "Hidden Gems", count: 15, description: "Underrated stories worth a watch." },
+  { id: "list-4", title: "Family Night", count: 6, description: "Feel-good and all-ages picks." },
+];
 
 function getWatchlist() {
   return [
@@ -52,6 +73,41 @@ function getWatchlist() {
   ];
 }
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ??
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "";
+
+function buildApiUrl(path) {
+  return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
+}
+
+function getReleaseYear(dateString) {
+  if (!dateString) {
+    return "—";
+  }
+
+  const year = Number(dateString.slice(0, 4));
+  return Number.isNaN(year) ? "—" : year;
+}
+
+function normalizePopupMovies(payload) {
+  const items = Array.isArray(payload)
+    ? payload
+    : payload?.results || payload?.data || [];
+
+  return items.map((item) => ({
+    id: item.id ?? item.tmdb_id ?? item.slug ?? item.title,
+    title: item.title ?? item.name ?? "Untitled",
+    year: getReleaseYear(item.release_date ?? item.first_air_date),
+    rating: item.vote_average ? Number(item.vote_average).toFixed(1) : item.rating ?? "—",
+    image:
+      item.image ||
+      (item.poster_path ? `${imageBaseUrl}${item.poster_path}` : null) ||
+      (item.backdrop_path ? `${imageBaseUrl}${item.backdrop_path}` : null),
+  }));
+}
+
 function IconPlus(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
@@ -63,6 +119,63 @@ function IconPlus(props) {
 
 export default function Watchlog() {
   const movies = getWatchlist();
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(popupCategories[0]);
+  const [popupMovies, setPopupMovies] = useState([]);
+  const [isPopupLoading, setIsPopupLoading] = useState(false);
+  const [popupError, setPopupError] = useState("");
+
+  useEffect(() => {
+    if (!isPopupOpen) {
+      return undefined;
+    }
+
+    const endpoint = categoryEndpoints[selectedCategory];
+    if (!endpoint) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    let isActive = true;
+
+    const loadPopupMovies = async () => {
+      setIsPopupLoading(true);
+      setPopupError("");
+
+      try {
+        const response = await fetch(buildApiUrl(`/api/movies/${endpoint}`), {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Request failed (${response.status})`);
+        }
+
+        const payload = await response.json();
+        const normalized = normalizePopupMovies(payload);
+
+        if (isActive) {
+          setPopupMovies(normalized);
+        }
+      } catch (error) {
+        if (!controller.signal.aborted && isActive) {
+          setPopupError("Failed to load movies.");
+          setPopupMovies([]);
+        }
+      } finally {
+        if (isActive) {
+          setIsPopupLoading(false);
+        }
+      }
+    };
+
+    loadPopupMovies();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [isPopupOpen, selectedCategory]);
 
   return (
     <div className="min-h-screen bg-[#0b0c10] text-zinc-100">
@@ -126,14 +239,31 @@ export default function Watchlog() {
               </div>
             </article>
           ))}
-          <article className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/40 p-6 text-zinc-400">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950">
-              <IconPlus className="h-5 w-5" />
-            </div>
-            <p className="mt-4 text-sm">Add new title</p>
-          </article>
         </section>
       </div>
+
+      <button
+        type="button"
+        onClick={() => setIsPopupOpen(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-3 text-sm font-semibold text-zinc-900 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.9)] transition hover:bg-white"
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900 text-zinc-100">
+          <IconPlus className="h-5 w-5" />
+        </span>
+        Add new title
+      </button>
+
+      <WatchlogPopup
+        isOpen={isPopupOpen}
+        onClose={() => setIsPopupOpen(false)}
+        popupCategories={popupCategories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        popupMovies={popupMovies}
+        isPopupLoading={isPopupLoading}
+        popupError={popupError}
+        popupLists={popupLists}
+      />
     </div>
   );
 }
