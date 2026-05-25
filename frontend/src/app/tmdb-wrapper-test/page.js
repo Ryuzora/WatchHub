@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { forEach } from 'eslint-config-next';
 
 const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 

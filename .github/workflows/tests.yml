@@ -59,3 +59,8 @@ jobs:
       - name: Tests
         run: ./vendor/bin/phpunit
         working-directory: backend
+
+      - name: Execute tests
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: ./vendor/bin/phpunit
