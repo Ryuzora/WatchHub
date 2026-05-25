@@ -85,10 +85,6 @@ export default async function DetailPage({ params }) {
                         </div>
 
                         <div>
-                            <p className="text-sm text-zinc-500">
-                                Movie Detail
-                            </p>
-
                             <h1 className="mt-2 text-4xl font-semibold tracking-tight text-zinc-200 md:text-5xl">
                                 {movie.title}
                             </h1>
