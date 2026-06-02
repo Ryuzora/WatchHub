@@ -21,4 +21,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/watchlists/me', [WatchlistController::class, 'myWatchlists']);
     Route::get('/watchlists/{watchlist}', [WatchlistController::class, 'show']);
     Route::post('/watchlists/{watchlist}/items', [WatchlistController::class, 'storeItem']);
+    Route::delete('/watchlists/{watchlist}/items/{tmdb_id}', [WatchlistController::class, 'destroyItem']);
 });

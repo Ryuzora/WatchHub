@@ -401,16 +401,6 @@ export default function WatchlistPage() {
                         ? `${totalLists} watchlist${totalLists !== 1 ? "s" : ""}`
                         : "No watchlists yet"}
                 </h2>
-                {!isWatchlistLoading && !watchlistError && (
-                  <button
-                    type="button"
-                    onClick={() => setIsCreatePopupOpen(true)}
-                    className="flex items-center gap-2 rounded-full border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-                  >
-                    <IconPlus className="h-3.5 w-3.5" />
-                    New watchlist
-                  </button>
-                )}
               </div>
 
               {/* Loading skeleton */}

@@ -135,4 +135,29 @@ class WatchlistController extends Controller
             'watchlist_title' => $watchlist->title,
         ];
     }
+
+    public function destroyItem(Request $request, Watchlist $watchlist, $tmdbId)
+    {
+        if ($watchlist->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $movie = Movie::where('tmdb_movie_id', $tmdbId)->first();
+        if (!$movie) {
+            return response()->json(['message' => 'Movie not found.'], 404);
+        }
+
+        $watchlistItem = WatchlistItem::where('watchlist_id', $watchlist->id)
+                                      ->where('movie_id', $movie->id)
+                                      ->first();
+
+        if (!$watchlistItem) {
+            return response()->json(['message' => 'Item not found in watchlist.'], 404);
+        }
+
+        $watchlistItem->delete();
+
+        return response()->json(['message' => 'Item removed successfully.']);
+    }
 }
+
