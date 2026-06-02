@@ -39,6 +39,23 @@ class Tmdb {
         $json = $response->json();
         return $json;
     }
+
+    public static function movieList(string $category, int $page = 1, string $language = 'en-US', ?string $region = null)
+    {
+        $query = [
+            'language' => $language,
+            'page' => $page,
+        ];
+
+        if ($region) {
+            $query['region'] = $region;
+        }
+
+        $response = Http::withToken(config('services.tmdb.bearer_token'))
+            ->get(self::$domain . "/movie/$category", $query);
+
+        return $response->json();
+    }
 }
 
 ?>

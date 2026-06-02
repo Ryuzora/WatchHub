@@ -1,6 +1,45 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+import { loginUser } from "../../../services/authService";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { refreshUser } = useAuth();
+  const [formState, setFormState] = useState({
+    email: "",
+    password: "",
+  });
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormState((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      await loginUser(formState);
+      await refreshUser();
+      router.push("/watchlist");
+    } catch (error) {
+      setErrorMessage(error?.message || "Login failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#0b0b0f] text-zinc-100 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
@@ -16,29 +55,42 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form className="mt-7 space-y-4" action="#">
+          <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
             <input
               type="email"
               name="email"
               placeholder="Email address"
+              value={formState.email}
+              onChange={handleChange}
               className="h-12 w-full rounded-none border border-zinc-700 bg-zinc-900/80 px-4 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none transition focus:border-zinc-500"
+              required
             />
             <input
               type="password"
               name="password"
               placeholder="Password"
+              value={formState.password}
+              onChange={handleChange}
               className="h-12 w-full rounded-none border border-zinc-700 bg-zinc-900/80 px-4 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none transition focus:border-zinc-500"
+              required
             />
 
             <a href="#" className="block text-sm text-zinc-400 hover:text-zinc-200 transition">
               Forgot password?
             </a>
 
+            {errorMessage && (
+              <p className="rounded border border-red-500/60 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                {errorMessage}
+              </p>
+            )}
+
             <button
               type="submit"
-              className="h-12 w-full bg-zinc-200 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
+              disabled={isSubmitting}
+              className="h-12 w-full bg-zinc-200 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Sign In
+              {isSubmitting ? "Signing In..." : "Sign In"}
             </button>
           </form>
 

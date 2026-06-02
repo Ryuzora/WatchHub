@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 const navLinks = [
   { label: "Dashboard", href: "/" },
-  { label: "Search", href: "#" },
-  { label: "Watchlist", href: "/watchlog" },
+  { label: "Watchlist", href: "/watchlist" },
   { label: "Profile", href: "#" },
 ];
 
@@ -60,7 +60,7 @@ export default function TopNav({
             <div className="text-lg font-semibold tracking-wide text-white">WatchHub</div>
             <nav className="hidden items-center gap-6 text-sm text-zinc-400 md:flex">
               {navLinks.map((link) => (
-                <a
+                <Link
                   key={link.label}
                   href={link.href}
                   className={
@@ -70,7 +70,7 @@ export default function TopNav({
                   }
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
             </nav>
           </div>
