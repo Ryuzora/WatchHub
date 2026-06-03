@@ -309,13 +309,13 @@ export default function WatchlistPage() {
                   Keep track of your favorite movies and organize them into watchlists.
                 </p>
               </div>
-              <Link
-                href="/login"
-                className="mt-2 flex items-center gap-2 rounded-full bg-zinc-100 px-7 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-white"
-              >
-                Go to Login
-                <IconArrowRight className="h-4 w-4" />
-              </Link>
+                <Link
+                    href="/login?redirect=/watchlist"
+                    className="mt-2 flex items-center gap-2 rounded-full bg-zinc-100 px-7 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-white"
+                >
+                    Go to Login
+                    <IconArrowRight className="h-4 w-4" />
+                </Link>
             </div>
           </section>
         )}
