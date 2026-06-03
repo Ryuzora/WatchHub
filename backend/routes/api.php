@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\MovieController;
 use App\Http\Controllers\Api\WatchlistController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\LikeController;
 
 Route::get('/movies/popular', [MovieController::class, 'popular']);
 Route::get('/movies/top-rated', [MovieController::class, 'topRated']);
@@ -25,4 +26,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/watchlists/{watchlist}', [WatchlistController::class, 'show']);
     Route::post('/watchlists/{watchlist}/items', [WatchlistController::class, 'storeItem']);
     Route::delete('/watchlists/{watchlist}/items/{tmdb_id}', [WatchlistController::class, 'destroyItem']);
+
+    Route::get('/likes', [LikeController::class, 'index']);
+    Route::get('/movies/{tmdbMovieId}/likes/check', [LikeController::class, 'check']);
+    Route::post('/movies/{tmdbMovieId}/likes', [LikeController::class, 'store']);
+    Route::delete('/movies/{tmdbMovieId}/likes', [LikeController::class, 'destroy']);
 });

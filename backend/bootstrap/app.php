@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [
             'api/movies/*/reviews',
+            'api/movies/*/likes',
         ]);
         $middleware->web(append: [
             HandleInertiaRequests::class,
