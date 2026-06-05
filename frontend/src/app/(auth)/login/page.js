@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { loginUser } from "../../../services/authService";
 import { useAuth } from "../../../context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/";
   const { refreshUser } = useAuth();
   const [formState, setFormState] = useState({
     email: "",
@@ -32,7 +34,7 @@ export default function LoginPage() {
     try {
       await loginUser(formState);
       await refreshUser();
-      router.push("/watchlist");
+      router.push(redirectTo);
     } catch (error) {
       setErrorMessage(error?.message || "Login failed.");
     } finally {

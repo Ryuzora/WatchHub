@@ -1,11 +1,23 @@
 import Link from "next/link";
 import TopNav from "../../components/TopNav";
-import { getMovieDetail } from "../../../services/movieService";
+import ReviewSection from "./ReviewSection";
+import LikeButton from "./LikeButton";
+import { getMovieDetail, getMovieReviews } from '@/services/movieService';
 
 export default async function DetailPage({ params }) {
     const { id } = await params;
 
     const movie = await getMovieDetail(id);
+    const initialReviews = await getMovieReviews(id);
+    const reviewCount = initialReviews.length;
+
+    const userRating =
+        reviewCount > 0
+            ? (
+                initialReviews.reduce((total, review) => total + Number(review.rating), 0) /
+                reviewCount
+            ).toFixed(1)
+            : null;
 
     if (!movie) {
         return (
@@ -114,6 +126,12 @@ export default async function DetailPage({ params }) {
                                     </span>
                                 )}
 
+                                <span className="rounded-md border border-zinc-700 bg-zinc-900/80 px-3 py-1 text-sm text-zinc-300">
+                                    {userRating
+                                        ? `User Rating ${userRating} / ${reviewCount} review${reviewCount > 1 ? "s" : ""}`
+                                        : "-"}
+                                </span>
+
                                 {movie.status && (
                                     <span className="rounded-md border border-zinc-700 bg-zinc-900/80 px-3 py-1 text-sm text-zinc-300">
                                         {movie.status}
@@ -192,7 +210,10 @@ export default async function DetailPage({ params }) {
                                 <button className="h-11 rounded-md bg-zinc-200 px-5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100">
                                     Add to Watchlist
                                 </button>
+                                <LikeButton tmdbMovieId={id} />
                             </div>
+
+                            <ReviewSection tmdbMovieId={id} initialReviews={initialReviews} />
                         </div>
                     </div>
                 </div>
