@@ -2,6 +2,7 @@ import Link from "next/link";
 import TopNav from "../../components/TopNav";
 import ReviewSection from "./ReviewSection";
 import LikeButton from "./LikeButton";
+import AddWatchlistButton from '@/app/detail/[id]/AddWatchlistButton';
 import { getMovieDetail, getMovieReviews } from '@/services/movieService';
 
 export default async function DetailPage({ params }) {
@@ -207,9 +208,7 @@ export default async function DetailPage({ params }) {
                             </div>
 
                             <div className="mt-8 flex flex-wrap gap-3">
-                                <button className="h-11 rounded-md bg-zinc-200 px-5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100">
-                                    Add to Watchlist
-                                </button>
+                                <AddWatchlistButton movieId={movie.id} />
                                 <LikeButton tmdbMovieId={id} />
                             </div>
 
