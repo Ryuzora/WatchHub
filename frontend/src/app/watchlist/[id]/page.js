@@ -6,8 +6,10 @@ import { useParams, useRouter } from "next/navigation";
 import TopNav from "../../components/TopNav";
 import WatchlogPopup from "../../components/WatchlogPopup";
 import { useAuth } from "@/context/AuthContext";
+import { getLikedMovies } from "@/services/likeService";
+import { getMovieDetail } from "@/services/movieService";
 
-const popupCategories = ["Now Playing", "Popular", "Top Rated", "Upcoming"];
+const popupCategories = ["Now Playing", "Popular", "Top Rated", "Upcoming", "Liked Movies"];
 
 const categoryEndpoints = {
   "Now Playing": "now-playing",
@@ -49,6 +51,69 @@ function normalizePopupMovies(payload) {
       (item.poster_path ? `${imageBaseUrl}${item.poster_path}` : null) ||
       (item.backdrop_path ? `${imageBaseUrl}${item.backdrop_path}` : null),
   }));
+}
+
+async function getLikedMovieDetails() {
+    const likes = await getLikedMovies();
+
+    const items = Array.isArray(likes)
+        ? likes
+        : likes?.data || [];
+
+    const detailPromises = items.map(async (item) => {
+        const tmdbMovieId =
+            item.movie?.tmdb_movie_id ||
+            item.tmdb_movie_id ||
+            item.movie_id;
+
+        if (!tmdbMovieId) return null;
+
+        const detail = await getMovieDetail(tmdbMovieId);
+
+        if (!detail) return null;
+
+        return {
+            id: detail.id,
+            title: detail.title ?? "Untitled",
+            year: getReleaseYear(detail.release_date),
+            rating: detail.vote_average
+                ? Number(detail.vote_average).toFixed(1)
+                : "—",
+            image:
+                detail.poster_path
+                    ? `${imageBaseUrl}${detail.poster_path}`
+                    : detail.backdrop_path
+                        ? `${imageBaseUrl}${detail.backdrop_path}`
+                        : null,
+        };
+    });
+
+    const movies = await Promise.all(detailPromises);
+
+    return movies.filter(Boolean);
+}
+
+function normalizeLikedMovies(payload) {
+    const items = Array.isArray(payload) ? payload : payload?.data || payload?.results || [];
+
+    return items.map((item) => {
+        const movie = item.movie || item;
+
+        return {
+            id: movie.tmdb_movie_id ?? movie.tmdb_id ?? movie.id,
+            title: movie.title ?? "Untitled",
+            year: getReleaseYear(movie.release_date ?? movie.first_air_date),
+            rating: movie.vote_average
+                ? Number(movie.vote_average).toFixed(1)
+                : movie.rating
+                    ? Number(movie.rating).toFixed(1)
+                    : "—",
+            image:
+                movie.image ||
+                (movie.poster_path ? `${imageBaseUrl}${movie.poster_path}` : null) ||
+                (movie.backdrop_path ? `${imageBaseUrl}${movie.backdrop_path}` : null),
+        };
+    });
 }
 
 function formatDuration(runtime) {
@@ -295,34 +360,54 @@ export default function WatchlistDetailPage() {
     return () => controller.abort();
   }, [user, id, loadWatchlist]);
 
-  useEffect(() => {
-    if (!isPopupOpen) return;
-    const endpoint = categoryEndpoints[selectedCategory];
-    if (!endpoint) return;
+    useEffect(() => {
+        if (!isPopupOpen) return;
 
-    const controller = new AbortController();
-    const loadPopupMovies = async () => {
-      setIsPopupLoading(true);
-      setPopupError("");
-      try {
-        const response = await fetch(buildApiUrl(`/api/movies/${endpoint}`), {
-          signal: controller.signal,
-        });
-        if (!response.ok)
-          throw new Error(`Request failed (${response.status})`);
-        const payload = await response.json();
-        setPopupMovies(normalizePopupMovies(payload));
-      } catch (error) {
-        if (!controller.signal.aborted)
-          setPopupError("Failed to load movies.");
-      } finally {
-        if (!controller.signal.aborted) setIsPopupLoading(false);
-      }
-    };
+        const controller = new AbortController();
 
-    loadPopupMovies();
-    return () => controller.abort();
-  }, [isPopupOpen, selectedCategory]);
+        const loadPopupMovies = async () => {
+            setIsPopupLoading(true);
+            setPopupError("");
+
+            try {
+                if (selectedCategory === "Liked Movies") {
+                    const movies = await getLikedMovieDetails();
+                    setPopupMovies(movies);
+                    return;
+                }
+
+                const endpoint = categoryEndpoints[selectedCategory];
+
+                if (!endpoint) {
+                    setPopupMovies([]);
+                    return;
+                }
+
+                const response = await fetch(buildApiUrl(`/api/movies/${endpoint}`), {
+                    signal: controller.signal,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Request failed (${response.status})`);
+                }
+
+                const payload = await response.json();
+                setPopupMovies(normalizePopupMovies(payload));
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    setPopupError("Failed to load movies.");
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setIsPopupLoading(false);
+                }
+            }
+        };
+
+        loadPopupMovies();
+
+        return () => controller.abort();
+    }, [isPopupOpen, selectedCategory]);
 
   const handleAddMovie = async (movieId) => {
     try {
