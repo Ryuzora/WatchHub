@@ -21,4 +21,9 @@ class Watchlist extends Model
     {
         return $this->hasMany(WatchlistItem::class);
     }
+
+    public function movies()
+    {
+        return $this->belongsToMany(Movie::class, 'watchlist_items', 'watchlist_id', 'movie_id')->withTimestamps();
+    }
 }
