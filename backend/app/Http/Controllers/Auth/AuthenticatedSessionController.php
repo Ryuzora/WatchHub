@@ -37,7 +37,7 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('users');
         }
 
-        return redirect()->route('home');
+        return redirect()->route('dashboard');
     }
 
     /**
