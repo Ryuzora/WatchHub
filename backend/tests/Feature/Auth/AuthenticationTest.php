@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\BlockedAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -40,6 +41,42 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_blocked_users_can_not_authenticate()
+    {
+        $user = User::factory()->create();
+
+        BlockedAccount::create([
+            'user_id' => $user->id,
+            'type' => 'temporary',
+            'message' => 'Your account has been blocked.',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+        $response->assertSessionHasErrors('email');
+    }
+
+    public function test_blocked_authenticated_users_are_logged_out()
+    {
+        $user = User::factory()->create();
+
+        BlockedAccount::create([
+            'user_id' => $user->id,
+            'type' => 'temporary',
+            'message' => 'Your account has been blocked.',
+        ]);
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $this->assertGuest();
+        $response->assertRedirect(route('login', absolute: false));
+        $response->assertSessionHasErrors('email');
     }
 
     public function test_users_can_logout()

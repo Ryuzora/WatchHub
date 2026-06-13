@@ -154,6 +154,9 @@ function normalizeWatchlist(payload) {
     id: payload.id,
     title: payload.title ?? "Untitled",
     description: payload.description ?? "",
+    visibility: payload.visibility ?? "private",
+    isOwner: payload.is_owner ?? true,
+    ownerName: payload.owner?.name ?? null,
     items: normalizeWatchlistItems(payload.items || []),
   };
 }
@@ -544,11 +547,16 @@ export default function WatchlistDetailPage() {
               {/* Content */}
               <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
                 <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-                  Watchlist
+                  {watchlist.visibility} Watchlist
                 </div>
                 <h1 className="mt-2 text-3xl font-bold text-white md:text-4xl">
                   {watchlist.title}
                 </h1>
+                {!watchlist.isOwner && watchlist.ownerName && (
+                  <p className="mt-1 text-sm text-zinc-500">
+                    Shared by {watchlist.ownerName}
+                  </p>
+                )}
                 {watchlist.description && (
                   <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">
                     {watchlist.description}
@@ -621,13 +629,15 @@ export default function WatchlistDetailPage() {
                       Click the button below to start adding movies.
                     </p>
                   </div>
-                  <button
-                    onClick={() => setIsPopupOpen(true)}
-                    className="mt-2 flex items-center gap-2 rounded-full bg-zinc-100 px-5 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-white"
-                  >
-                    <IconPlus className="h-4 w-4" />
-                    Add your first title
-                  </button>
+                  {watchlist.isOwner && (
+                    <button
+                      onClick={() => setIsPopupOpen(true)}
+                      className="mt-2 flex items-center gap-2 rounded-full bg-zinc-100 px-5 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-white"
+                    >
+                      <IconPlus className="h-4 w-4" />
+                      Add your first title
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -667,18 +677,20 @@ export default function WatchlistDetailPage() {
                       )}
 
                       {/* Delete button */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteMovie(movie.id);
-                        }}
-                        disabled={deletingId === movie.id}
-                        className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/80 text-white opacity-0 backdrop-blur-sm transition-all duration-300 hover:bg-red-500 group-hover:opacity-100 disabled:opacity-50"
-                        title="Remove from watchlist"
-                      >
-                        <IconTrash className="h-3.5 w-3.5" />
-                      </button>
+                      {watchlist.isOwner && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteMovie(movie.id);
+                          }}
+                          disabled={deletingId === movie.id}
+                          className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/80 text-white opacity-0 backdrop-blur-sm transition-all duration-300 hover:bg-red-500 group-hover:opacity-100 disabled:opacity-50"
+                          title="Remove from watchlist"
+                        >
+                          <IconTrash className="h-3.5 w-3.5" />
+                        </button>
+                      )}
 
                       {/* Bottom info */}
                       <div className="absolute bottom-0 left-0 right-0 translate-y-2 p-3 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
@@ -716,7 +728,7 @@ export default function WatchlistDetailPage() {
       </div>
 
       {/* FAB */}
-      {user && (
+      {user && watchlist?.isOwner && (
         <button
           type="button"
           onClick={() => setIsPopupOpen(true)}

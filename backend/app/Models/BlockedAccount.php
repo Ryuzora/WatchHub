@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class BlockedAccount extends Model
 {
     protected $fillable = [
+        'user_id',
         'type',
         'message'
     ];

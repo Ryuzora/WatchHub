@@ -10,6 +10,7 @@ class Watchlist extends Model
         'user_id',
         'title',
         'description',
+        'visibility',
     ];
 
     public function user()

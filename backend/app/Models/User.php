@@ -64,6 +64,6 @@ class User extends Authenticatable
 
     public function blockedAccount()
     {
-        return $this->hasOne(blockedAccount::class);
+        return $this->hasOne(BlockedAccount::class);
     }
 }

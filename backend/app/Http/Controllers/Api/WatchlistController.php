@@ -15,7 +15,7 @@ class WatchlistController extends Controller
     {
         $watchlists = Watchlist::query()
             ->where('user_id', $request->user()->id)
-            ->select(['id', 'user_id', 'title', 'description'])
+            ->select(['id', 'user_id', 'title', 'description', 'visibility'])
             ->withCount('items')
             ->orderBy('id')
             ->get();
@@ -28,24 +28,28 @@ class WatchlistController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'visibility' => 'nullable|in:private,public',
         ]);
 
         $watchlist = Watchlist::create([
             'user_id' => $request->user()->id,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? '',
+            'visibility' => $validated['visibility'] ?? 'private',
         ]);
 
         return response()->json($watchlist, 201);
     }
 
-    public function show(Watchlist $watchlist)
+    public function show(Request $request, Watchlist $watchlist)
     {
-        if ($watchlist->user_id !== auth()->id()) {
+        $isOwner = $watchlist->user_id === $request->user()->id;
+
+        if (! $isOwner && $watchlist->visibility !== 'public') {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        $watchlist->load('items.movie');
+        $watchlist->load(['items.movie', 'user:id,name']);
 
         $items = $watchlist->items->map(function ($item) use ($watchlist) {
             return $this->buildWatchlistItem($item, $watchlist);
@@ -56,6 +60,12 @@ class WatchlistController extends Controller
             'user_id' => $watchlist->user_id,
             'title' => $watchlist->title,
             'description' => $watchlist->description,
+            'visibility' => $watchlist->visibility,
+            'is_owner' => $isOwner,
+            'owner' => $watchlist->user ? [
+                'id' => $watchlist->user->id,
+                'name' => $watchlist->user->name,
+            ] : null,
             'items' => $items,
         ]);
     }
@@ -80,6 +90,17 @@ class WatchlistController extends Controller
         return response()->json($this->buildWatchlistItem($item, $watchlist), 201);
     }
 
+    public function destroy(Request $request, Watchlist $watchlist)
+    {
+        if ($watchlist->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $watchlist->delete();
+
+        return response()->json(['message' => 'Watchlist deleted successfully.']);
+    }
+
     public function myWatchlists(Request $request)
     {
         $user = $request->user();
@@ -96,6 +117,36 @@ class WatchlistController extends Controller
                 'user_id' => $watchlist->user_id,
                 'title' => $watchlist->title,
                 'description' => $watchlist->description,
+                'visibility' => $watchlist->visibility,
+                'items' => $watchlist->items->map(function ($item) use ($watchlist) {
+                    return $this->buildWatchlistItem($item, $watchlist);
+                })->values(),
+            ];
+        });
+
+        return response()->json($data);
+    }
+
+    public function publicWatchlists(Request $request)
+    {
+        $watchlists = Watchlist::query()
+            ->where('visibility', 'public')
+            ->where('user_id', '!=', $request->user()->id)
+            ->with(['items.movie', 'user:id,name'])
+            ->orderByDesc('updated_at')
+            ->get();
+
+        $data = $watchlists->map(function ($watchlist) {
+            return [
+                'id' => $watchlist->id,
+                'user_id' => $watchlist->user_id,
+                'title' => $watchlist->title,
+                'description' => $watchlist->description,
+                'visibility' => $watchlist->visibility,
+                'owner' => $watchlist->user ? [
+                    'id' => $watchlist->user->id,
+                    'name' => $watchlist->user->name,
+                ] : null,
                 'items' => $watchlist->items->map(function ($item) use ($watchlist) {
                     return $this->buildWatchlistItem($item, $watchlist);
                 })->values(),
@@ -160,4 +211,3 @@ class WatchlistController extends Controller
         return response()->json(['message' => 'Item removed successfully.']);
     }
 }
-

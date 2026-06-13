@@ -5,7 +5,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\AdminController;
 use App\Http\Middleware\AdminMiddleware;
 
-Route::middleware(AdminMiddleware::class)->group(function(){
+Route::middleware(['auth', 'blocked', AdminMiddleware::class])->group(function(){
     Route::get('users', [AdminController::class, 'userIndex'])->name('users');
     Route::get('block/create', [AdminController::class, 'createBlock'])->name('block.create');
     Route::delete('block/{id}', [AdminController::class, 'deleteBlock'])->name('block.delete');

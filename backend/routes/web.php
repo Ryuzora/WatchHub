@@ -11,7 +11,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
     return Inertia::render('welcome');
-})->middleware(['auth'])->name('dashboard');
+})->middleware(['auth', 'blocked'])->name('dashboard');
 
 require __DIR__.'/admin.php';
 require __DIR__.'/settings.php';

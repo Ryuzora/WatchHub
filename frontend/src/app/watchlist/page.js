@@ -26,8 +26,10 @@ function normalizeWatchlists(payload) {
       : null;
     return {
       id: watchlist.id,
+      ownerName: watchlist.owner?.name ?? null,
       title: watchlist.title ?? "Untitled",
       description: watchlist.description ?? "",
+      visibility: watchlist.visibility ?? "private",
       totalItems: watchlist.items_count ?? watchlist.items?.length ?? 0,
       thumbnail,
     };
@@ -148,14 +150,26 @@ function CardsSkeleton() {
 }
 
 /* ─── Main Page ─── */
+function SectionHeaderSkeleton({ withDescription = false } = {}) {
+  return (
+    <div className="mb-5">
+      <div className="h-6 w-44 animate-pulse rounded bg-zinc-800/60" />
+      {withDescription && (
+        <div className="mt-3 h-4 w-80 max-w-full animate-pulse rounded bg-zinc-800/50" />
+      )}
+    </div>
+  );
+}
+
 export default function WatchlistPage() {
   const { user, isAuthLoading } = useAuth();
 
   const [watchlists, setWatchlists] = useState([]);
+  const [publicWatchlists, setPublicWatchlists] = useState([]);
   const [isWatchlistLoading, setIsWatchlistLoading] = useState(true);
   const [watchlistError, setWatchlistError] = useState("");
 
-  const [createForm, setCreateForm] = useState({ title: "", description: "" });
+  const [createForm, setCreateForm] = useState({ title: "", description: "", visibility: "private" });
   const [createError, setCreateError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
@@ -173,22 +187,35 @@ export default function WatchlistPage() {
     setWatchlistError("");
 
     try {
-      const response = await fetch(buildApiUrl("/api/watchlists/me"), {
-        signal,
-        credentials: "include",
-        cache: "no-store",
-      });
+      const [myResponse, publicResponse] = await Promise.all([
+        fetch(buildApiUrl("/api/watchlists/me"), {
+          signal,
+          credentials: "include",
+          cache: "no-store",
+        }),
+        fetch(buildApiUrl("/api/watchlists/public"), {
+          signal,
+          credentials: "include",
+          cache: "no-store",
+        }),
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`Request failed (${response.status})`);
+      if (!myResponse.ok || !publicResponse.ok) {
+        throw new Error("Request failed");
       }
 
-      const payload = await response.json();
-      setWatchlists(normalizeWatchlists(payload));
+      const [myPayload, publicPayload] = await Promise.all([
+        myResponse.json(),
+        publicResponse.json(),
+      ]);
+
+      setWatchlists(normalizeWatchlists(myPayload));
+      setPublicWatchlists(normalizeWatchlists(publicPayload));
     } catch (error) {
       if (!signal?.aborted) {
         setWatchlistError("Failed to load watchlists.");
         setWatchlists([]);
+        setPublicWatchlists([]);
       }
     } finally {
       if (!signal?.aborted) {
@@ -201,7 +228,9 @@ export default function WatchlistPage() {
     if (!user) return;
 
     const controller = new AbortController();
-    loadWatchlists(controller.signal);
+    queueMicrotask(() => {
+      loadWatchlists(controller.signal);
+    });
 
     return () => controller.abort();
   }, [user]);
@@ -230,6 +259,7 @@ export default function WatchlistPage() {
         body: JSON.stringify({
           title: createForm.title,
           description: createForm.description,
+          visibility: createForm.visibility,
         }),
       });
 
@@ -239,7 +269,7 @@ export default function WatchlistPage() {
         throw new Error(message);
       }
 
-      setCreateForm({ title: "", description: "" });
+      setCreateForm({ title: "", description: "", visibility: "private" });
       setIsCreatePopupOpen(false);
       showToast("Watchlist created!");
       await loadWatchlists();
@@ -278,6 +308,83 @@ export default function WatchlistPage() {
 
   const totalLists = watchlists.length;
   const totalTitles = watchlists.reduce((sum, w) => sum + w.totalItems, 0);
+
+  const renderWatchlistCards = (items, { allowDelete = false, showOwner = false } = {}) => (
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      {items.map((watchlist) => (
+        <Link
+          key={watchlist.id}
+          href={`/watchlist/${watchlist.id}`}
+          className="group relative flex h-40 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950/60 transition-all duration-300 hover:border-zinc-600 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
+        >
+          <div className="relative w-1/3 shrink-0 overflow-hidden">
+            {watchlist.thumbnail ? (
+              <img
+                src={watchlist.thumbnail}
+                alt={watchlist.title}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                loading="lazy"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-zinc-900/80">
+                <IconFilm className="h-8 w-8 text-zinc-700" />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0d0e13]" />
+          </div>
+
+          <div className="relative flex flex-1 flex-col justify-between py-4 pr-5 pl-2">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] via-transparent to-cyan-500/[0.03] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+            <div className="relative flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    {watchlist.visibility}
+                  </span>
+                  {showOwner && watchlist.ownerName && (
+                    <span className="text-[11px] text-zinc-500">by {watchlist.ownerName}</span>
+                  )}
+                </div>
+                <h3 className="truncate text-base font-semibold text-white transition-colors group-hover:text-zinc-50">
+                  {watchlist.title}
+                </h3>
+                {watchlist.description && (
+                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-500">
+                    {watchlist.description}
+                  </p>
+                )}
+              </div>
+
+              {allowDelete && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDeleteWatchlist(watchlist.id);
+                  }}
+                  disabled={deletingId === watchlist.id}
+                  className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-transparent text-zinc-600 opacity-0 transition-all duration-200 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 disabled:opacity-50"
+                  title="Delete watchlist"
+                >
+                  <IconTrash className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="relative flex items-center gap-2 text-xs text-zinc-500">
+              <IconFilm className="h-3.5 w-3.5" />
+              <span>
+                {watchlist.totalItems} {watchlist.totalItems === 1 ? "title" : "titles"}
+              </span>
+              <IconArrowRight className="ml-auto h-3.5 w-3.5 text-zinc-600 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-zinc-400" />
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#0b0c10] text-zinc-100">
@@ -391,17 +498,19 @@ export default function WatchlistPage() {
 
             {/* Watchlist Grid */}
             <section>
-              <div className="mb-5 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">
-                  {isWatchlistLoading
-                    ? "Loading..."
-                    : watchlistError
+              {isWatchlistLoading ? (
+                <SectionHeaderSkeleton />
+              ) : (
+                <div className="mb-5 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-white">
+                    {watchlistError
                       ? "Error"
                       : totalLists > 0
                         ? `${totalLists} watchlist${totalLists !== 1 ? "s" : ""}`
                         : "No watchlists yet"}
-                </h2>
-              </div>
+                  </h2>
+                </div>
+              )}
 
               {/* Loading skeleton */}
               {isWatchlistLoading && <CardsSkeleton />}
@@ -445,76 +554,32 @@ export default function WatchlistPage() {
 
               {/* Watchlist cards */}
               {!isWatchlistLoading && !watchlistError && watchlists.length > 0 && (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  {watchlists.map((watchlist) => (
-                    <Link
-                      key={watchlist.id}
-                      href={`/watchlist/${watchlist.id}`}
-                      className="group relative flex h-40 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950/60 transition-all duration-300 hover:border-zinc-600 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
-                    >
-                      {/* Left 1/3 — Poster image */}
-                      <div className="relative w-1/3 shrink-0 overflow-hidden">
-                        {watchlist.thumbnail ? (
-                          <img
-                            src={watchlist.thumbnail}
-                            alt={watchlist.title}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-zinc-900/80">
-                            <IconFilm className="h-8 w-8 text-zinc-700" />
-                          </div>
-                        )}
-                        {/* Fade from image to card */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0d0e13]" />
-                      </div>
+                renderWatchlistCards(watchlists, { allowDelete: true })
+              )}
+            </section>
 
-                      {/* Right 2/3 — Content */}
-                      <div className="relative flex flex-1 flex-col justify-between py-4 pr-5 pl-2">
-                        {/* Hover gradient accent */}
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] via-transparent to-cyan-500/[0.03] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                        <div className="relative flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            <h3 className="truncate text-base font-semibold text-white transition-colors group-hover:text-zinc-50">
-                              {watchlist.title}
-                            </h3>
-                            {watchlist.description && (
-                              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-500">
-                                {watchlist.description}
-                              </p>
-                            )}
-                          </div>
-                          {/* Delete button */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleDeleteWatchlist(watchlist.id);
-                            }}
-                            disabled={deletingId === watchlist.id}
-                            className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-transparent text-zinc-600 opacity-0 transition-all duration-200 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 disabled:opacity-50"
-                            title="Delete watchlist"
-                          >
-                            <IconTrash className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-
-                        <div className="relative flex items-center gap-2 text-xs text-zinc-500">
-                          <IconFilm className="h-3.5 w-3.5" />
-                          <span>
-                            {watchlist.totalItems}{" "}
-                            {watchlist.totalItems === 1 ? "title" : "titles"}
-                          </span>
-                          <IconArrowRight className="ml-auto h-3.5 w-3.5 text-zinc-600 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-zinc-400" />
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+            <section>
+              {isWatchlistLoading ? (
+                <SectionHeaderSkeleton withDescription />
+              ) : (
+                <div className="mb-5">
+                  <h2 className="text-lg font-semibold text-white">Public Watchlists</h2>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    Explore public collections shared by other users.
+                  </p>
                 </div>
               )}
+
+              {isWatchlistLoading && <CardsSkeleton />}
+
+              {!isWatchlistLoading && !watchlistError && publicWatchlists.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/40 py-10 text-center text-sm text-zinc-500">
+                  No public watchlists from other users yet.
+                </div>
+              )}
+
+              {!isWatchlistLoading && !watchlistError && publicWatchlists.length > 0 &&
+                renderWatchlistCards(publicWatchlists, { showOwner: true })}
             </section>
           </>
         )}
@@ -593,6 +658,30 @@ export default function WatchlistPage() {
                   rows={3}
                   className="w-full rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none transition focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/20 resize-none"
                 />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm text-zinc-400">
+                  Visibility
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {["private", "public"].map((visibility) => (
+                    <button
+                      key={visibility}
+                      type="button"
+                      onClick={() => setCreateForm((prev) => ({ ...prev, visibility }))}
+                      className={`rounded-lg border px-4 py-3 text-left text-sm capitalize transition ${
+                        createForm.visibility === visibility
+                          ? "border-zinc-200 bg-zinc-100 text-zinc-950"
+                          : "border-zinc-700 bg-zinc-900/80 text-zinc-300 hover:border-zinc-500"
+                      }`}
+                    >
+                      {visibility}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-zinc-500">
+                  Public watchlists can be viewed by other users. Private watchlists are only visible to you.
+                </p>
               </div>
               <button
                 type="submit"
