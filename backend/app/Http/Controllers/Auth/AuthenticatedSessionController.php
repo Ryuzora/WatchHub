@@ -32,7 +32,12 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
-        return redirect()->intended(route('users', absolute: false));
+
+        $fallbackRoute = Auth::user()->role === 'admin'
+            ? route('users', absolute: false)
+            : route('home', absolute: false);
+
+        return redirect()->intended($fallbackRoute);
     }
 
     /**
