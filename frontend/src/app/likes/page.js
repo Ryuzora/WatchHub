@@ -140,7 +140,16 @@ export default function LikesPage() {
             const likes = await getLikedMovies();
 
             const movieDetails = await Promise.all(
-                likes.map((like) => getMovieDetail(like.movie.tmdb_movie_id))
+                likes.map(async (like) => {
+                    const movie = await getMovieDetail(like.movie.tmdb_movie_id);
+
+                    return movie
+                        ? {
+                            ...movie,
+                            listKey: like.id,
+                        }
+                        : null;
+                })
             );
 
             setMovies(movieDetails.filter(Boolean));
@@ -324,7 +333,7 @@ export default function LikesPage() {
                             {!isLikesLoading && !likesError && movies.length > 0 && (
                                 <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                                     {movies.map((movie) => (
-                                        <MovieCard key={movie.id} movie={movie} />
+                                        <MovieCard key={movie.listKey} movie={movie} />
                                     ))}
                                 </div>
                             )}
