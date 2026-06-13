@@ -21,6 +21,17 @@ class MovieController extends Controller
         return response()->json($movie);
     }
 
+    public function search(Request $request)
+    {
+        $validated = $request->validate([
+            'query' => ['required', 'string', 'min:2', 'max:100'],
+        ]);
+
+        $movies = Tmdb::search('movie', $validated['query']);
+
+        return response()->json($movies);
+    }
+
     public function popular(Request $request)
     {
         return $this->getMovieList($request, 'popular');

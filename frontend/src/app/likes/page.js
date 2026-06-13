@@ -88,7 +88,7 @@ function MovieCard({ movie }) {
 
     return (
         <Link
-            href={`/detail/${movie.id}`}
+            href={`/detail/${movie.id}?from=${encodeURIComponent("/likes")}`}
             className="group relative block h-[320px] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-zinc-600 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
         >
             {posterUrl ? (

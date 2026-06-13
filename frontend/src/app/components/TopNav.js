@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import MovieSearchOverlay from "./MovieSearchOverlay";
 
 const navLinks = [
     { label: "Dashboard", href: "/" },
@@ -27,6 +28,7 @@ export default function TopNav({
     const { user } = useAuth();
 
     const [isVisible, setIsVisible] = useState(true);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const lastScrollY = useRef(0);
 
     const firstLetter = user?.name?.charAt(0)?.toUpperCase() || "U";
@@ -76,7 +78,11 @@ export default function TopNav({
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <button className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800">
+                        <button
+                            type="button"
+                            onClick={() => setIsSearchOpen(true)}
+                            className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800"
+                        >
                             <IconSearch className="h-4 w-4" />
                         </button>
 
@@ -91,6 +97,10 @@ export default function TopNav({
             </div>
 
             <div className="h-16" />
+            <MovieSearchOverlay
+                isOpen={isSearchOpen}
+                onClose={() => setIsSearchOpen(false)}
+            />
         </div>
     );
 }

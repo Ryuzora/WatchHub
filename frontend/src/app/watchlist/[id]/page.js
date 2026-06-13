@@ -639,7 +639,7 @@ export default function WatchlistDetailPage() {
                       {/* Poster */}
                       <div
                         className="cursor-pointer"
-                        onClick={() => router.push(`/detail/${movie.id}`)}
+                        onClick={() => router.push(`/detail/${movie.id}?from=${encodeURIComponent(`/watchlist/${id}`)}`)}
                       >
                         {movie.image ? (
                           <img
@@ -732,7 +732,7 @@ export default function WatchlistDetailPage() {
       {/* Toast notification */}
       {toast && (
         <div
-          className={`fixed bottom-20 right-6 z-50 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm transition-all ${
+          className={`fixed right-6 top-6 z-[120] flex items-center gap-2 rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm transition-all ${
             toast.type === "error"
               ? "border-red-500/40 bg-red-950/80 text-red-200"
               : "border-emerald-500/40 bg-emerald-950/80 text-emerald-200"

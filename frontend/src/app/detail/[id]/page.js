@@ -5,8 +5,10 @@ import LikeButton from "./LikeButton";
 import AddWatchlistButton from '@/app/detail/[id]/AddWatchlistButton';
 import { getMovieDetail, getMovieReviews } from '@/services/movieService';
 
-export default async function DetailPage({ params }) {
+export default async function DetailPage({ params, searchParams }) {
     const { id } = await params;
+    const resolvedSearchParams = await searchParams;
+    const from = resolvedSearchParams?.from || "/";
 
     const movie = await getMovieDetail(id);
     const initialReviews = await getMovieReviews(id);
@@ -23,7 +25,7 @@ export default async function DetailPage({ params }) {
     if (!movie) {
         return (
             <main className="min-h-screen bg-[#0b0b0f] text-zinc-100">
-                <TopNav active="Dashboard" />
+                <TopNav active="" />
 
                 <section className="mx-auto flex min-h-[calc(100vh-64px)] max-w-7xl items-center px-6 py-10">
                     <div className="w-full rounded-md border border-zinc-700/70 bg-zinc-900/40 p-7 shadow-2xl shadow-black/30">
@@ -36,7 +38,7 @@ export default async function DetailPage({ params }) {
                         </p>
 
                         <Link
-                            href="/"
+                            href={from}
                             className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-zinc-200 px-5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
                         >
                             Back
@@ -57,11 +59,11 @@ export default async function DetailPage({ params }) {
 
     return (
         <main className="min-h-screen bg-[#0b0b0f] text-zinc-100">
-            <TopNav active="Dashboard" />
+            <TopNav active="" />
 
             <section className="mx-auto max-w-7xl px-6 pb-16 pt-10">
                 <Link
-                    href="/"
+                    href={from}
                     className="mb-6 inline-block text-sm text-zinc-400 transition hover:text-zinc-200"
                 >
                     ← Back

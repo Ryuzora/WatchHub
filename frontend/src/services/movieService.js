@@ -40,6 +40,25 @@ export async function getMovieDetail(id) {
     }
 }
 
+export async function searchMovies(query) {
+    try {
+        const params = new URLSearchParams({ query });
+        const response = await fetch(`${backendBaseUrl}/api/movies/search?${params}`, {
+            cache: "no-store",
+        });
+
+        if (!response.ok) {
+            return [];
+        }
+
+        const data = await response.json();
+        return data?.results || [];
+    } catch (error) {
+        console.log("Error search movies:", error);
+        return [];
+    }
+}
+
 export async function getMovieReviews(tmdbMovieId) {
     try {
         const response = await fetch(

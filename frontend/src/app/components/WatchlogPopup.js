@@ -1,13 +1,43 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { searchMovies } from "@/services/movieService";
+
+const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
+
+function getReleaseYear(dateString) {
+  if (!dateString) return "—";
+  const year = Number(dateString.slice(0, 4));
+  return Number.isNaN(year) ? "—" : year;
+}
+
+function normalizeSearchMovies(movies) {
+  return movies.map((movie) => ({
+    id: movie.id,
+    title: movie.title ?? movie.name ?? "Untitled",
+    year: getReleaseYear(movie.release_date ?? movie.first_air_date),
+    rating: movie.vote_average ? Number(movie.vote_average).toFixed(1) : "—",
+    image:
+      (movie.poster_path ? `${imageBaseUrl}${movie.poster_path}` : null) ||
+      (movie.backdrop_path ? `${imageBaseUrl}${movie.backdrop_path}` : null),
+  }));
+}
 
 function IconPlus(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
       <path d="M12 5v14" />
       <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+function IconSearch(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
     </svg>
   );
 }
@@ -24,6 +54,61 @@ export default function WatchlogPopup({
   onAddMovie,
 }) {
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+
+  const trimmedSearchQuery = searchQuery.trim();
+  const isSearchingMode = trimmedSearchQuery.length >= 2;
+  const visibleMovies = isSearchingMode ? searchResults : popupMovies;
+  const isVisibleLoading = isSearchingMode ? isSearchLoading : isPopupLoading;
+  const visibleError = isSearchingMode ? searchError : popupError;
+  const sectionTitle = isSearchingMode
+    ? `Search results for "${trimmedSearchQuery}"`
+    : `${selectedCategory} picks`;
+
+  useEffect(() => {
+    if (!isOpen || trimmedSearchQuery.length < 2) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      setIsSearchLoading(true);
+      setSearchError("");
+
+      try {
+        const movies = await searchMovies(trimmedSearchQuery);
+        setSearchResults(normalizeSearchMovies(movies));
+      } catch (error) {
+        setSearchResults([]);
+        setSearchError("Failed to search movies.");
+      } finally {
+        setIsSearchLoading(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isOpen, trimmedSearchQuery]);
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchQuery(value);
+
+    if (value.trim().length < 2) {
+      setSearchResults([]);
+      setSearchError("");
+      setIsSearchLoading(false);
+    }
+  };
+
+  const handleCategorySelect = (category) => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearchError("");
+    setIsSearchLoading(false);
+    onSelectCategory(category);
+  };
 
   if (!isOpen) {
     return null;
@@ -52,14 +137,24 @@ export default function WatchlogPopup({
           </button>
         </div>
 
+        <div className="relative mt-6">
+          <IconSearch className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+          <input
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="Search movies to add..."
+            className="h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900/60 pl-12 pr-4 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus:border-zinc-600 focus:ring-1 focus:ring-zinc-700/40"
+          />
+        </div>
+
         <div className="mt-5 flex flex-wrap gap-2">
           {popupCategories.map((category) => (
             <button
               key={category}
               type="button"
-              onClick={() => onSelectCategory(category)}
+              onClick={() => handleCategorySelect(category)}
               className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
-                selectedCategory === category
+                !isSearchingMode && selectedCategory === category
                   ? "bg-zinc-100 text-zinc-900"
                   : "border border-zinc-800 text-zinc-300 hover:text-white"
               }`}
@@ -71,30 +166,30 @@ export default function WatchlogPopup({
 
         <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-white">{selectedCategory} picks</h4>
-            <span className="text-xs text-zinc-400">{popupMovies.length} titles</span>
+            <h4 className="text-sm font-semibold text-white">{sectionTitle}</h4>
+            <span className="text-xs text-zinc-400">{visibleMovies.length} titles</span>
           </div>
-          {isPopupLoading && (
+          {isVisibleLoading && (
             <div className="mt-4 rounded-xl border border-dashed border-zinc-800 p-6 text-center text-xs text-zinc-400">
               Loading movies...
             </div>
           )}
-          {!isPopupLoading && popupError && (
+          {!isVisibleLoading && visibleError && (
             <div className="mt-4 rounded-xl border border-dashed border-red-500/60 p-6 text-center text-xs text-red-200">
-              {popupError}
+              {visibleError}
             </div>
           )}
-          {!isPopupLoading && !popupError && popupMovies.length === 0 && (
+          {!isVisibleLoading && !visibleError && visibleMovies.length === 0 && (
             <div className="mt-4 rounded-xl border border-dashed border-zinc-800 p-6 text-center text-xs text-zinc-400">
-              No movies available yet.
+              {isSearchingMode ? "No movies found." : "No movies available yet."}
             </div>
           )}
-          {!isPopupLoading && !popupError && popupMovies.length > 0 && (
+          {!isVisibleLoading && !visibleError && visibleMovies.length > 0 && (
             <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {popupMovies.map((movie) => (
+              {visibleMovies.map((movie) => (
                 <div
                   key={movie.id}
-                  onClick={() => router.push(`/detail/${movie.id}`)}
+                  onClick={() => router.push(`/detail/${movie.id}?from=${encodeURIComponent(window.location.pathname)}`)}
                   className="group relative cursor-pointer overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/60 transition hover:border-zinc-600"
                 >
                   {movie.image ? (
