@@ -34,7 +34,7 @@ export default function SignupPage() {
     try {
       await registerUser(formState);
       await refreshUser();
-      router.push("/watchlog");
+      router.push("/login");
     } catch (error) {
       setErrorMessage(error?.message || "Signup failed.");
     } finally {
