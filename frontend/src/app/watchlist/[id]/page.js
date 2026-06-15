@@ -6,8 +6,10 @@ import { useParams, useRouter } from "next/navigation";
 import TopNav from "../../components/TopNav";
 import WatchlogPopup from "../../components/WatchlogPopup";
 import { useAuth } from "@/context/AuthContext";
+import { getLikedMovies } from "@/services/likeService";
+import { getMovieDetail } from "@/services/movieService";
 
-const popupCategories = ["Now Playing", "Popular", "Top Rated", "Upcoming"];
+const popupCategories = ["Now Playing", "Popular", "Top Rated", "Upcoming", "Liked Movies"];
 
 const categoryEndpoints = {
   "Now Playing": "now-playing",
@@ -51,6 +53,69 @@ function normalizePopupMovies(payload) {
   }));
 }
 
+async function getLikedMovieDetails() {
+    const likes = await getLikedMovies();
+
+    const items = Array.isArray(likes)
+        ? likes
+        : likes?.data || [];
+
+    const detailPromises = items.map(async (item) => {
+        const tmdbMovieId =
+            item.movie?.tmdb_movie_id ||
+            item.tmdb_movie_id ||
+            item.movie_id;
+
+        if (!tmdbMovieId) return null;
+
+        const detail = await getMovieDetail(tmdbMovieId);
+
+        if (!detail) return null;
+
+        return {
+            id: detail.id,
+            title: detail.title ?? "Untitled",
+            year: getReleaseYear(detail.release_date),
+            rating: detail.vote_average
+                ? Number(detail.vote_average).toFixed(1)
+                : "—",
+            image:
+                detail.poster_path
+                    ? `${imageBaseUrl}${detail.poster_path}`
+                    : detail.backdrop_path
+                        ? `${imageBaseUrl}${detail.backdrop_path}`
+                        : null,
+        };
+    });
+
+    const movies = await Promise.all(detailPromises);
+
+    return movies.filter(Boolean);
+}
+
+function normalizeLikedMovies(payload) {
+    const items = Array.isArray(payload) ? payload : payload?.data || payload?.results || [];
+
+    return items.map((item) => {
+        const movie = item.movie || item;
+
+        return {
+            id: movie.tmdb_movie_id ?? movie.tmdb_id ?? movie.id,
+            title: movie.title ?? "Untitled",
+            year: getReleaseYear(movie.release_date ?? movie.first_air_date),
+            rating: movie.vote_average
+                ? Number(movie.vote_average).toFixed(1)
+                : movie.rating
+                    ? Number(movie.rating).toFixed(1)
+                    : "—",
+            image:
+                movie.image ||
+                (movie.poster_path ? `${imageBaseUrl}${movie.poster_path}` : null) ||
+                (movie.backdrop_path ? `${imageBaseUrl}${movie.backdrop_path}` : null),
+        };
+    });
+}
+
 function formatDuration(runtime) {
   if (!runtime || Number.isNaN(runtime)) return null;
   const hours = Math.floor(runtime / 60);
@@ -89,6 +154,9 @@ function normalizeWatchlist(payload) {
     id: payload.id,
     title: payload.title ?? "Untitled",
     description: payload.description ?? "",
+    visibility: payload.visibility ?? "private",
+    isOwner: payload.is_owner ?? true,
+    ownerName: payload.owner?.name ?? null,
     items: normalizeWatchlistItems(payload.items || []),
   };
 }
@@ -295,34 +363,54 @@ export default function WatchlistDetailPage() {
     return () => controller.abort();
   }, [user, id, loadWatchlist]);
 
-  useEffect(() => {
-    if (!isPopupOpen) return;
-    const endpoint = categoryEndpoints[selectedCategory];
-    if (!endpoint) return;
+    useEffect(() => {
+        if (!isPopupOpen) return;
 
-    const controller = new AbortController();
-    const loadPopupMovies = async () => {
-      setIsPopupLoading(true);
-      setPopupError("");
-      try {
-        const response = await fetch(buildApiUrl(`/api/movies/${endpoint}`), {
-          signal: controller.signal,
-        });
-        if (!response.ok)
-          throw new Error(`Request failed (${response.status})`);
-        const payload = await response.json();
-        setPopupMovies(normalizePopupMovies(payload));
-      } catch (error) {
-        if (!controller.signal.aborted)
-          setPopupError("Failed to load movies.");
-      } finally {
-        if (!controller.signal.aborted) setIsPopupLoading(false);
-      }
-    };
+        const controller = new AbortController();
 
-    loadPopupMovies();
-    return () => controller.abort();
-  }, [isPopupOpen, selectedCategory]);
+        const loadPopupMovies = async () => {
+            setIsPopupLoading(true);
+            setPopupError("");
+
+            try {
+                if (selectedCategory === "Liked Movies") {
+                    const movies = await getLikedMovieDetails();
+                    setPopupMovies(movies);
+                    return;
+                }
+
+                const endpoint = categoryEndpoints[selectedCategory];
+
+                if (!endpoint) {
+                    setPopupMovies([]);
+                    return;
+                }
+
+                const response = await fetch(buildApiUrl(`/api/movies/${endpoint}`), {
+                    signal: controller.signal,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Request failed (${response.status})`);
+                }
+
+                const payload = await response.json();
+                setPopupMovies(normalizePopupMovies(payload));
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    setPopupError("Failed to load movies.");
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setIsPopupLoading(false);
+                }
+            }
+        };
+
+        loadPopupMovies();
+
+        return () => controller.abort();
+    }, [isPopupOpen, selectedCategory]);
 
   const handleAddMovie = async (movieId) => {
     try {
@@ -459,11 +547,16 @@ export default function WatchlistDetailPage() {
               {/* Content */}
               <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
                 <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-                  Watchlist
+                  {watchlist.visibility} Watchlist
                 </div>
                 <h1 className="mt-2 text-3xl font-bold text-white md:text-4xl">
                   {watchlist.title}
                 </h1>
+                {!watchlist.isOwner && watchlist.ownerName && (
+                  <p className="mt-1 text-sm text-zinc-500">
+                    Shared by {watchlist.ownerName}
+                  </p>
+                )}
                 {watchlist.description && (
                   <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">
                     {watchlist.description}
@@ -536,13 +629,15 @@ export default function WatchlistDetailPage() {
                       Click the button below to start adding movies.
                     </p>
                   </div>
-                  <button
-                    onClick={() => setIsPopupOpen(true)}
-                    className="mt-2 flex items-center gap-2 rounded-full bg-zinc-100 px-5 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-white"
-                  >
-                    <IconPlus className="h-4 w-4" />
-                    Add your first title
-                  </button>
+                  {watchlist.isOwner && (
+                    <button
+                      onClick={() => setIsPopupOpen(true)}
+                      className="mt-2 flex items-center gap-2 rounded-full bg-zinc-100 px-5 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-white"
+                    >
+                      <IconPlus className="h-4 w-4" />
+                      Add your first title
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -554,7 +649,7 @@ export default function WatchlistDetailPage() {
                       {/* Poster */}
                       <div
                         className="cursor-pointer"
-                        onClick={() => router.push(`/detail/${movie.id}`)}
+                        onClick={() => router.push(`/detail/${movie.id}?from=${encodeURIComponent(`/watchlist/${id}`)}`)}
                       >
                         {movie.image ? (
                           <img
@@ -582,18 +677,20 @@ export default function WatchlistDetailPage() {
                       )}
 
                       {/* Delete button */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteMovie(movie.id);
-                        }}
-                        disabled={deletingId === movie.id}
-                        className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/80 text-white opacity-0 backdrop-blur-sm transition-all duration-300 hover:bg-red-500 group-hover:opacity-100 disabled:opacity-50"
-                        title="Remove from watchlist"
-                      >
-                        <IconTrash className="h-3.5 w-3.5" />
-                      </button>
+                      {watchlist.isOwner && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteMovie(movie.id);
+                          }}
+                          disabled={deletingId === movie.id}
+                          className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/80 text-white opacity-0 backdrop-blur-sm transition-all duration-300 hover:bg-red-500 group-hover:opacity-100 disabled:opacity-50"
+                          title="Remove from watchlist"
+                        >
+                          <IconTrash className="h-3.5 w-3.5" />
+                        </button>
+                      )}
 
                       {/* Bottom info */}
                       <div className="absolute bottom-0 left-0 right-0 translate-y-2 p-3 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
@@ -631,7 +728,7 @@ export default function WatchlistDetailPage() {
       </div>
 
       {/* FAB */}
-      {user && (
+      {user && watchlist?.isOwner && (
         <button
           type="button"
           onClick={() => setIsPopupOpen(true)}
@@ -647,7 +744,7 @@ export default function WatchlistDetailPage() {
       {/* Toast notification */}
       {toast && (
         <div
-          className={`fixed bottom-20 right-6 z-50 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm transition-all ${
+          className={`fixed right-6 top-6 z-[120] flex items-center gap-2 rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm transition-all ${
             toast.type === "error"
               ? "border-red-500/40 bg-red-950/80 text-red-200"
               : "border-emerald-500/40 bg-emerald-950/80 text-emerald-200"

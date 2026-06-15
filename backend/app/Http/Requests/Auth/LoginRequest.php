@@ -49,6 +49,21 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user();
+
+        $blockedAccount = $user->blockedAccount()->first();
+
+        if ($blockedAccount) {
+            Auth::guard('web')->logout();
+
+            $this->session()->invalidate();
+            $this->session()->regenerateToken();
+
+            throw ValidationException::withMessages([
+                'email' => $blockedAccount->message,
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

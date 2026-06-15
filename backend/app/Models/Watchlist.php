@@ -10,6 +10,7 @@ class Watchlist extends Model
         'user_id',
         'title',
         'description',
+        'visibility',
     ];
 
     public function user()
@@ -20,5 +21,10 @@ class Watchlist extends Model
     public function items()
     {
         return $this->hasMany(WatchlistItem::class);
+    }
+
+    public function movies()
+    {
+        return $this->belongsToMany(Movie::class, 'watchlist_items', 'watchlist_id', 'movie_id')->withTimestamps();
     }
 }

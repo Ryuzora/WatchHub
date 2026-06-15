@@ -11,10 +11,11 @@ Route::get('/movies/popular', [MovieController::class, 'popular']);
 Route::get('/movies/top-rated', [MovieController::class, 'topRated']);
 Route::get('/movies/now-playing', [MovieController::class, 'nowPlaying']);
 Route::get('/movies/upcoming', [MovieController::class, 'upcoming']);
+Route::get('/movies/search', [MovieController::class, 'search']);
 Route::get('/movies/{tmdbMovieId}/reviews', [ReviewController::class, 'index']);
 Route::get('/movies/{id}', [MovieController::class, 'show']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'blocked'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
@@ -23,7 +24,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/watchlists', [WatchlistController::class, 'index']);
     Route::post('/watchlists', [WatchlistController::class, 'store']);
     Route::get('/watchlists/me', [WatchlistController::class, 'myWatchlists']);
+    Route::get('/watchlists/public', [WatchlistController::class, 'publicWatchlists']);
     Route::get('/watchlists/{watchlist}', [WatchlistController::class, 'show']);
+    Route::delete('/watchlists/{watchlist}', [WatchlistController::class, 'destroy']);
     Route::post('/watchlists/{watchlist}/items', [WatchlistController::class, 'storeItem']);
     Route::delete('/watchlists/{watchlist}/items/{tmdb_id}', [WatchlistController::class, 'destroyItem']);
 

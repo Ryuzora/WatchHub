@@ -11,6 +11,19 @@ function buildApiUrl(path) {
     return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
 }
 
+function getCookie(name) {
+    if (typeof document === "undefined") return null;
+
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+
+    if (parts.length === 2) {
+        return decodeURIComponent(parts.pop().split(";").shift());
+    }
+
+    return null;
+}
+
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -33,13 +46,40 @@ export function AuthProvider({ children }) {
             if (response.ok) {
                 const userData = await response.json();
                 setUser(userData);
+                return userData;
             } else {
                 setUser(null);
+                return null;
             }
         } catch (error) {
             setUser(null);
+            return null;
         } finally {
             setIsAuthLoading(false);
+        }
+    }, []);
+
+    const logout = useCallback(async () => {
+        try {
+            await fetch(buildApiUrl("/sanctum/csrf-cookie"), {
+                credentials: "include",
+            });
+
+            const xsrfToken = getCookie("XSRF-TOKEN");
+
+            await fetch(buildApiUrl("/logout"), {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": xsrfToken || "",
+                },
+            });
+
+            setUser(null);
+        } catch (error) {
+            setUser(null);
         }
     }, []);
 
@@ -64,6 +104,7 @@ export function AuthProvider({ children }) {
         isAuthLoading,
         setUser,
         refreshUser,
+        logout,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

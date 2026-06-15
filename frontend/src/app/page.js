@@ -134,7 +134,7 @@ function MovieRow({ label, endpoint }) {
                     {movies.map((movie) => (
                         <div
                             key={movie.id}
-                            onClick={() => router.push(`/detail/${movie.id}`)}
+                            onClick={() => router.push(`/detail/${movie.id}?from=${encodeURIComponent("/")}`)}
                             className="group relative w-36 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-transparent transition-all duration-300 hover:border-zinc-600 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] md:w-44"
                         >
                             {movie.poster ? (
@@ -237,7 +237,7 @@ function HeroSection({ movie, loading }) {
                         </p>
                     )}
                     <button
-                        onClick={() => router.push(`/detail/${movie.id}`)}
+                        onClick={() => router.push(`/detail/${movie.id}?from=${encodeURIComponent("/")}`)}
                         className="mt-2 flex w-fit items-center gap-2 rounded-lg bg-white px-6 py-2.5 font-semibold text-black transition hover:bg-zinc-200"
                     >
                         <IconPlay className="h-4 w-4" />
