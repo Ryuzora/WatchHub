@@ -87,10 +87,6 @@ export default function LoginPage() {
               required
             />
 
-            <a href="#" className="block text-sm text-zinc-400 hover:text-zinc-200 transition">
-              Forgot password?
-            </a>
-
             {errorMessage && (
               <p className="rounded border border-red-500/60 bg-red-500/10 px-3 py-2 text-sm text-red-200">
                 {errorMessage}
